@@ -47,7 +47,7 @@ std::string& TCP_Socket::recv() {
         receivedDataBuffer.insert(receivedDataBuffer.end(), buffer.get(), buffer.get() + bytesRead); //Перенос в вектор всех байт с буфера
 
         if (!receivedDataBuffer.empty() && receivedDataBuffer.back() == END_MARKER[0]) { //Если вектор имеет маркер конца
-            std::cout << "End marker received." << std::endl;
+            /*std::cout << "End marker received." << std::endl;*/
             
 
             text.insert(text.end(), receivedDataBuffer.begin(), receivedDataBuffer.end());
@@ -57,8 +57,11 @@ std::string& TCP_Socket::recv() {
         }
     }
 
-    if (bytesRead > 0) {//Если recv выбросил ошибку
-        std::cerr << "Error receiving data!"<< std::endl;
+    if (bytesRead == -1) {//Если recv выбросил ошибку
+        std::cerr << "Error receiving data!" << std::endl;
+    } 
+    if (bytesRead == 0) {
+        std::cerr << "Error server slep!" << std::endl;
     }
     
     return text;

@@ -21,15 +21,9 @@
     <ClCompile Include="TCP_Socket.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="ISQL.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TCP_Socket.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="ISQL.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

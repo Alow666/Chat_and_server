@@ -6,35 +6,70 @@
 #include <thread>
 #include <libpq-fe.h>
 
-
 #define PORT 50500
 #define ADDRESS_IP4 "127.0.0.1"
 #define BUFFER_SIZE 1024
 
-void handleClient(SOCKET clientSocket) { //РАБОТА С СОКЕТОМ ПОСЕТИТЕЛЯ
+#define SQL_SERVER_IP "localHost"
+#define SQL_PORT "5432"
+#define SQL_SERVER_DB_NAME "chat"
+#define SQL_SERVER_USER_NAME "postgres"
+#define SQL_SERVER_PASSWORD "123"
+
+void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ 
+
+	PGconn* conn = conn = PQsetdbLogin(SQL_SERVER_IP, SQL_PORT, NULL, NULL, SQL_SERVER_DB_NAME, SQL_SERVER_USER_NAME, SQL_SERVER_PASSWORD);
+
+	if (PQstatus(conn) != CONNECTION_OK) {
+		std::cerr << "ERROR connect DB: " << PQerrorMessage(conn) << std::endl;
+		PQfinish(conn);
+		return;
+	}
+
+	PQsetClientEncoding(conn, "UTF8");
+
 	std::unique_ptr<char[]> buffer = std::make_unique<char[]>(BUFFER_SIZE);
 	int bytesRead;
 	std::vector<char> receivedDataBuffer;
 	std::string SQL_Send;
 	const std::string END_MARKER = ";"; // маркер
+	const char* temp;
 	
 	std::cout << "Handling client: " << clientSocket << std::endl;
-	
 
 	while ((bytesRead = ::recv(clientSocket, buffer.get(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при закрытии connect или ошибке
 		
 		receivedDataBuffer.insert(receivedDataBuffer.end(), buffer.get(), buffer.get() + bytesRead); //Перенос в вектор всех байт с буфера
 		
 		if (!receivedDataBuffer.empty() && receivedDataBuffer.back() == END_MARKER[0]) { //Если вектор имеет маркер конца
-			std::cout << "End marker received." << std::endl;
+			
 			// Теперь можно обработать полученные данные и сформировать SQL-запрос
-
-
+			
 			std::string receivedData(receivedDataBuffer.begin(), receivedDataBuffer.end()); 
 
-			SQL_Send = "SELECT * FROM your_table WHERE data = 123123123123;"; 
+			PGresult* res = PQexec(conn, receivedData.c_str());//Сюда потом вставить запросы
 
+			if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+				std::cout << "ERROR DB: " << PQerrorMessage(conn) << std::endl;
+				PQclear(res);
+				PQfinish(conn);
+			}
 
+			int rows = PQntuples(res);
+			int cols = PQnfields(res);
+
+			for (int i = 0; i < rows; i++) {
+				for (int j = 0; j < cols; j++) {
+					temp = PQgetvalue(res, i, j);
+					SQL_Send += temp;
+					SQL_Send += " ";
+				}
+				
+			}
+
+			SQL_Send += ";";
+
+			PQclear(res);
 
 			::send(clientSocket, SQL_Send.c_str(), SQL_Send.length(), 0);//отправление результата SQL запроса
 			receivedDataBuffer.clear(); // Очищаем буфер для следующих данных
@@ -48,6 +83,7 @@ void handleClient(SOCKET clientSocket) { //РАБОТА С СОКЕТОМ ПОСЕТИТЕЛЯ
 		std::cout << "Client (" << clientSocket << ") disconnected." << std::endl;
 	}
 
+	PQfinish(conn);
 	closesocket(clientSocket);
 }
 
@@ -57,7 +93,6 @@ int main() {
 		std::cerr << "WSAStartup failed." << std::endl;
 		return 1;
 	}
-
 
 	try {
 		TCP_Socket sock;
@@ -72,7 +107,7 @@ int main() {
 			
 			std::cout << "Client connected: " << clientSocket << std::endl;//РАЗОБРАТЬСЯ
 
-			std::thread clientThread(handleClient, clientSocket);
+			std::thread clientThread(handleClient, std::ref(clientSocket));
 			clientThread.detach();
 		}
 		sock.close();
