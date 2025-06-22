@@ -30,24 +30,21 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 
 	std::unique_ptr<char[]> buffer = std::make_unique<char[]>(BUFFER_SIZE);
 	int bytesRead;
-	std::vector<char> receivedDataBuffer;
-	std::string SQL_Send;
 	const std::string END_MARKER = ";"; // маркер
 	const char* temp;
+	std::string data;
 	
 	std::cout << "Handling client: " << clientSocket << std::endl;
 
 	while ((bytesRead = ::recv(clientSocket, buffer.get(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при закрытии connect или ошибке
-		
-		receivedDataBuffer.insert(receivedDataBuffer.end(), buffer.get(), buffer.get() + bytesRead); //Перенос в вектор всех байт с буфера
-		
-		if (!receivedDataBuffer.empty() && receivedDataBuffer.back() == END_MARKER[0]) { //Если вектор имеет маркер конца
+
+		data.append(buffer.get(), buffer.get() + bytesRead);
+
+		if (!data.empty() && data.back() == END_MARKER[0]) { //Если вектор имеет маркер конца
 			
 			// Теперь можно обработать полученные данные и сформировать SQL-запрос
 			
-			std::string receivedData(receivedDataBuffer.begin(), receivedDataBuffer.end()); 
-
-			PGresult* res = PQexec(conn, receivedData.c_str());//Сюда потом вставить запросы
+			PGresult* res = PQexec(conn, data.c_str());//Сюда потом вставить запросы
 
 			if (PQresultStatus(res) != PGRES_TUPLES_OK) {
 				std::cout << "ERROR DB: " << PQerrorMessage(conn) << std::endl;
@@ -55,24 +52,25 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 				PQfinish(conn);
 			}
 
+			data.clear();
 			int rows = PQntuples(res);
 			int cols = PQnfields(res);
 
 			for (int i = 0; i < rows; i++) {
 				for (int j = 0; j < cols; j++) {
 					temp = PQgetvalue(res, i, j);
-					SQL_Send += temp;
-					SQL_Send += " ";
+					data += temp;
+					data += " ";
 				}
-				
 			}
 
-			SQL_Send += ";";
+			data += ";";
 
 			PQclear(res);
 
-			::send(clientSocket, SQL_Send.c_str(), SQL_Send.length(), 0);//отправление результата SQL запроса
-			receivedDataBuffer.clear(); // Очищаем буфер для следующих данных
+			::send(clientSocket, data.c_str(), data.length(), 0);//отправление результата SQL запроса
+			
+			data.clear();
 		}
 	}
 
