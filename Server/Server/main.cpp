@@ -5,6 +5,8 @@
 #include <vector> 
 #include <thread>
 #include <libpq-fe.h>
+#include "SQL_queries.h"
+#include <cstdlib>
 
 #define PORT 50500
 #define ADDRESS_IP4 "127.0.0.1"
@@ -18,7 +20,7 @@
 
 void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ 
 
-	PGconn* conn = conn = PQsetdbLogin(SQL_SERVER_IP, SQL_PORT, NULL, NULL, SQL_SERVER_DB_NAME, SQL_SERVER_USER_NAME, SQL_SERVER_PASSWORD);
+	PGconn* conn = PQsetdbLogin(SQL_SERVER_IP, SQL_PORT, NULL, NULL, SQL_SERVER_DB_NAME, SQL_SERVER_USER_NAME, SQL_SERVER_PASSWORD);
 
 	if (PQstatus(conn) != CONNECTION_OK) {
 		std::cerr << "ERROR connect DB: " << PQerrorMessage(conn) << std::endl;
@@ -29,44 +31,49 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 	PQsetClientEncoding(conn, "UTF8");
 
 	std::unique_ptr<char[]> buffer = std::make_unique<char[]>(BUFFER_SIZE);
-	int bytesRead;
-	const std::string END_MARKER = ";"; // маркер
-	const char* temp;
+	int bytesRead;// Количество переданных байт
+	const std::string END_MARKER = ";"; //Маркер конца запроса
 	std::string data;
 	
 	std::cout << "Handling client: " << clientSocket << std::endl;
 
-	while ((bytesRead = ::recv(clientSocket, buffer.get(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при закрытии connect или ошибке
+	while ((bytesRead = ::recv(clientSocket, buffer.get(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
 
-		data.append(buffer.get(), buffer.get() + bytesRead);
+		data.append(buffer.get(), buffer.get() + bytesRead);//Вставляет данные из буфера в строку STRING для дальнейшей работы
 
-		if (!data.empty() && data.back() == END_MARKER[0]) { //Если вектор имеет маркер конца
+		if (!data.empty() && data.back() == END_MARKER[0]) { //Если строка имеет маркер конца и не пуста исполняет запрос
 			
-			// Теперь можно обработать полученные данные и сформировать SQL-запрос
+			SQL_queries queries(conn);//Класс для работы с запросами SQL (DDL и DML)
+
+			switch (data[0])
+			{
+			case '1':
+
+				queries.DML_querie(data);
+				break;
+
+			case '2':
+
+				break;
+
+			default:
+
+				data.clear();
+				data = "Specify the query indicator!;";
+				break;
+			}
 			
-			PGresult* res = PQexec(conn, data.c_str());//Сюда потом вставить запросы
 
-			if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-				std::cout << "ERROR DB: " << PQerrorMessage(conn) << std::endl;
-				PQclear(res);
-				PQfinish(conn);
-			}
+			
 
-			data.clear();
-			int rows = PQntuples(res);
-			int cols = PQnfields(res);
+			
 
-			for (int i = 0; i < rows; i++) {
-				for (int j = 0; j < cols; j++) {
-					temp = PQgetvalue(res, i, j);
-					data += temp;
-					data += " ";
-				}
-			}
 
-			data += ";";
 
-			PQclear(res);
+
+
+
+
 
 			::send(clientSocket, data.c_str(), data.length(), 0);//отправление результата SQL запроса
 			

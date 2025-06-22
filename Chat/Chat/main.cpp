@@ -16,7 +16,7 @@ int main() {
 		return 1;
 	}
 
-	std::string aa("select name from users;");
+	std::string aa("1select name from users;");
 	
 	TCP_Socket sock;
 	sock.connect(SERVER_ADDRESS);
