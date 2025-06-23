@@ -4,6 +4,9 @@
 #include <ws2tcpip.h>
 #include <stdexcept>
 #include <string>
+#include <iomanip> // Äëÿ std::setw, std::setfill
+#include <sstream> // Äëÿ std::stringstream
+#include <vector>
 
 #pragma comment (lib, "Ws2_32.lib")
 
@@ -20,6 +23,9 @@ public:
     int recv(char* buffer, int len);
     void close();
     SOCKET getHandle() const;
+    static void createPacketWithTextSize(std::string& data);
+    static int extractSizeFromPacketWithTextSize(const std::vector<char>& data);
+
 private:
     SOCKET sock;
 };

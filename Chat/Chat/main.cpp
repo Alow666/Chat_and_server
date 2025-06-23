@@ -22,10 +22,10 @@ int main() {
 	sock.connect(SERVER_ADDRESS);
 		
 	sock.send(aa);
+	std::string aaa;
+	sock.recv(aaa);
 
-	aa = sock.recv();
-
-	std::cout << aa << std::endl;
+	std::cout << aaa << std::endl;
 
 	
 	sock.close();

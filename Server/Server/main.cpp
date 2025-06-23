@@ -6,11 +6,10 @@
 #include <thread>
 #include <libpq-fe.h>
 #include "SQL_queries.h"
-#include <cstdlib>
 
 #define PORT 50500
 #define ADDRESS_IP4 "127.0.0.1"
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 104857600
 
 #define SQL_SERVER_IP "localHost"
 #define SQL_PORT "5432"
@@ -30,25 +29,48 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 
 	PQsetClientEncoding(conn, "UTF8");
 
-	std::unique_ptr<char[]> buffer = std::make_unique<char[]>(BUFFER_SIZE);
+	std::vector<char> buffer(BUFFER_SIZE);
 	int bytesRead;// Количество переданных байт
-	const std::string END_MARKER = ";"; //Маркер конца запроса
+	unsigned overSizePack = 0;//Количество всех байт 
 	std::string data;
+	bool sizeDataFlag = false;
 	
 	std::cout << "Handling client: " << clientSocket << std::endl;
 
-	while ((bytesRead = ::recv(clientSocket, buffer.get(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
+	while (true) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
 
-		data.append(buffer.get(), buffer.get() + bytesRead);//Вставляет данные из буфера в строку STRING для дальнейшей работы
+		bytesRead = ::recv(clientSocket, buffer.data(), BUFFER_SIZE, 0);
 
-		if (!data.empty() && data.back() == END_MARKER[0]) { //Если строка имеет маркер конца и не пуста исполняет запрос
+		if (bytesRead == SOCKET_ERROR) {//Если recv выбросил ошибку
+			std::cerr << "Error receiving data from client (" << clientSocket << "): " << WSAGetLastError() << std::endl;
+			break;
+		}
+
+		if (bytesRead == 0) {//Если пользователь отключился 
+			std::cout << "Client (" << clientSocket << ") disconnected." << std::endl;
+			break;
+		}
+
+		if (sizeDataFlag == false && bytesRead > 10) {
+			overSizePack = TCP_Socket::extractSizeFromPacketWithTextSize(buffer);
+			sizeDataFlag = true;
+		}
+
+		std::cout << "sizeDataFlag == false && bytesRead > 10" << clientSocket << std::endl;
+
+		data.append(buffer.begin() + 10, buffer.begin() + bytesRead);
+
+		std::cout << "data.append(buffer.begin() + 10, buffer.begin() + bytesRead);" << clientSocket << std::endl;
+
+		if (data.length() == overSizePack) { //Проверка полного получения данных
 			
+			std::cout << "data.length() == overSizePack" << clientSocket << std::endl;
 			SQL_queries queries(conn);//Класс для работы с запросами SQL (DDL и DML)
 
 			switch (data[0])
 			{
 			case '1':
-
+				std::cout << "case '1':" << clientSocket << std::endl;
 				queries.DML_querie(data);
 				break;
 
@@ -59,33 +81,17 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 			default:
 
 				data.clear();
-				data = "Specify the query indicator!;";
+				data = "Specify the query indicator!";
 				break;
 			}
-			
 
-			
-
-			
-
-
-
-
-
-
-
-
-			::send(clientSocket, data.c_str(), data.length(), 0);//отправление результата SQL запроса
-			
+			TCP_Socket::createPacketWithTextSize(data);
+			::send(clientSocket, data.c_str(), int(data.length()), 0);//отправление результата SQL запроса
+			overSizePack = 0;
+			sizeDataFlag = false;
 			data.clear();
 		}
-	}
-
-	if (bytesRead == SOCKET_ERROR) {//Если recv выбросил ошибку
-		std::cerr << "Error receiving data from client (" << clientSocket << "): " << WSAGetLastError() << std::endl;
-	}
-	else if (bytesRead == 0) {//Если пользователь отключился 
-		std::cout << "Client (" << clientSocket << ") disconnected." << std::endl;
+		buffer.clear();
 	}
 
 	PQfinish(conn);
@@ -111,9 +117,9 @@ int main() {
 			SOCKET clientSocket = sock.accept();
 			
 			std::cout << "Client connected: " << clientSocket << std::endl;//РАЗОБРАТЬСЯ
-
-			std::thread clientThread(handleClient, std::ref(clientSocket));
-			clientThread.detach();
+			handleClient(clientSocket);
+			/*std::thread clientThread(handleClient, std::cref(clientSocket));
+			clientThread.detach();*/
 		}
 		sock.close();
 	}

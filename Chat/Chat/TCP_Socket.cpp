@@ -30,42 +30,41 @@ bool TCP_Socket::connect(const std::string& address) {
     return true;
 }
 
-void TCP_Socket::send(const std::string& data) {
+void TCP_Socket::send(std::string& data) {
+
+    createPacketWithTextSize(data);
     
     if (!(::send(sock, data.c_str(), static_cast<int>(data.length()), 0)))
         std::cout << "Not send!" << std::endl;
-
 }
 
-std::string& TCP_Socket::recv() {
+void TCP_Socket::recv(std::string& data) {
+    std::vector<char> buffer(BUFFER_SIZE);
+    int bytesRead = 0;
+    unsigned overSizePack = 0;//Количество всех байт 
+    bool sizeDataFlag = false;
+    
+    while(true) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
 
-    text.clear();
-    receivedDataBuffer.clear();
+        bytesRead = ::recv(sock, buffer.data(), BUFFER_SIZE, 0);
 
-    while ((bytesRead = ::recv(sock, buffer.get(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при закрытии connect или ошибке
+        if (bytesRead == SOCKET_ERROR) {//Если recv выбросил ошибку
+            std::cerr << "Error receiving data!" << std::endl;
+        }
+        if (bytesRead == 0) {
+            std::cerr << "Error server slep!" << std::endl;
+        }
+        if (sizeDataFlag == false && bytesRead > 10) {
+            overSizePack = TCP_Socket::extractSizeFromPacketWithTextSize(buffer);
+            sizeDataFlag = true;
+        }
 
-        receivedDataBuffer.insert(receivedDataBuffer.end(), buffer.get(), buffer.get() + bytesRead); //Перенос в вектор всех байт с буфера
+        data.append(buffer.begin() + 10, buffer.begin() + bytesRead);
 
-        if (!receivedDataBuffer.empty() && receivedDataBuffer.back() == END_MARKER[0]) { //Если вектор имеет маркер конца
-            /*std::cout << "End marker received." << std::endl;*/
-            
-
-            text.insert(text.end(), receivedDataBuffer.begin(), receivedDataBuffer.end());
-
-            receivedDataBuffer.clear(); // Очищаем буфер для следующих данных
+        if (data.length() == overSizePack) { //Проверка полного получения данных
             break;
         }
     }
-
-    if (bytesRead == -1) {//Если recv выбросил ошибку
-        std::cerr << "Error receiving data!" << std::endl;
-    } 
-    if (bytesRead == 0) {
-        std::cerr << "Error server slep!" << std::endl;
-    }
-    
-    return text;
-
 }
     
 
@@ -74,5 +73,42 @@ void TCP_Socket::close() {
         closesocket(sock);
         sock = INVALID_SOCKET;
     }
+}
+
+void TCP_Socket::createPacketWithTextSize(std::string& data) {//Добавление в голову размера передаваемых данных
+  
+    const int HEADER_SIZE_BYTES = 10;//Размер заголовка int
+    unsigned payload_length = data.length();//Размер данных
+    std::stringstream ss;
+    
+    ss << std::setw(HEADER_SIZE_BYTES) /*Устанавливаем ширину*/ << std::setfill('0') /*Заполняем ее 0*/ << payload_length; //Вставляется размер по умолчанию с права 
+
+    std::string size_header_str = ss.str();
+
+    if (size_header_str.length() > HEADER_SIZE_BYTES) {
+        std::cerr << "ERROR: Too much data to send!" << std::endl;
+        return;
+    }
+    size_header_str += data;
+    data = size_header_str;
+}
+
+int TCP_Socket::extractSizeFromPacketWithTextSize(const std::vector<char>& data) { //Извлечение размера данных 
+    const int HEADER_SIZE_BYTES = 10;
+
+    std::string size(data.begin(), data.begin() + HEADER_SIZE_BYTES); // Извлекаем строковое представление размера
+    int extracted_size = 0;
+
+    try {
+        extracted_size = std::stoi(size);
+    }
+    catch (const std::invalid_argument& e) {
+        std::cerr << "ERROR: The size header contains non-numeric characters: " << e.what() << std::endl;
+    }
+    catch (const std::out_of_range& e) {
+        std::cerr << "ERROR: Header size out of int range: " << e.what() << std::endl;
+    }
+
+    return extracted_size;
 }
 

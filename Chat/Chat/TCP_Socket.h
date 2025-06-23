@@ -5,8 +5,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <iomanip> // Для std::setw, std::setfill
+#include <sstream> // Для std::stringstream
+#include <algorithm> // Для std::copy
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 104857600
 #define PORT 50500
 
 #pragma comment (lib, "Ws2_32.lib")
@@ -18,22 +21,17 @@ public:
     ~TCP_Socket();
 
     bool connect(const std::string& address);
-
-    void send(const std::string& data);
-
-    std::string& recv();
-
+    void send(std::string& data);
+    void recv(std::string& data);
     void close();
-
- 
+  
 private:
     
     SOCKET sock;
     sockaddr_in serverAddr;
-    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(BUFFER_SIZE);
-    int bytesRead;
-    std::vector<char> receivedDataBuffer;
-    std::string text;
-    const std::string END_MARKER = ";"; // маркер
+    
+    void createPacketWithTextSize(std::string& data);
+    int extractSizeFromPacketWithTextSize(const std::vector<char>& data);
+
 };
 
