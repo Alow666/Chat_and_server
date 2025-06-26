@@ -53,29 +53,25 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 
 		if (sizeDataFlag == false && bytesRead > 10) {
 			overSizePack = TCP_Socket::extractSizeFromPacketWithTextSize(buffer);
+			data.append(buffer.begin() + 10, buffer.begin() + bytesRead);
 			sizeDataFlag = true;
 		}
-
-		std::cout << "sizeDataFlag == false && bytesRead > 10" << clientSocket << std::endl;
-
-		data.append(buffer.begin() + 10, buffer.begin() + bytesRead);
-
-		std::cout << "data.append(buffer.begin() + 10, buffer.begin() + bytesRead);" << clientSocket << std::endl;
+		else {
+			data.append(buffer.begin(), buffer.begin() + bytesRead);
+		}
 
 		if (data.length() == overSizePack) { //Проверка полного получения данных
 			
-			std::cout << "data.length() == overSizePack" << clientSocket << std::endl;
 			SQL_queries queries(conn);//Класс для работы с запросами SQL (DDL и DML)
 
 			switch (data[0])
 			{
 			case '1':
-				std::cout << "case '1':" << clientSocket << std::endl;
 				queries.DML_querie(data);
 				break;
 
 			case '2':
-
+				queries.DDL_querie(data);
 				break;
 
 			default:

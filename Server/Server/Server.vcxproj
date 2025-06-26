@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SQL_queries.cpp" />
     <ClCompile Include="TCP_Socket.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
