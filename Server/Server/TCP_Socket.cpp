@@ -28,9 +28,14 @@ void TCP_Socket::listen(int backlog) {
     if (::listen(sock, backlog) == SOCKET_ERROR) {
         throw std::runtime_error("Failed to listen on socket");
     }
+    u_long mode = 1;
+    if (ioctlsocket(sock, FIONBIO, &mode) != 0) { 
+        throw std::runtime_error("Failed not block socket");
+    }
 }
 
 SOCKET TCP_Socket::accept() {
+    
     SOCKET clientSock = ::accept(sock, nullptr, nullptr);
     if (clientSock == INVALID_SOCKET) {
         throw std::runtime_error("Failed to accept connection");

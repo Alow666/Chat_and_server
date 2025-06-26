@@ -2,7 +2,7 @@
 
 void SQL_queries::DML_querie(std::string& data)
 {
-	PGresult* res = PQexec(conn, data.c_str() + 1);//Сюда потом вставить запросы
+	PGresult* res = PQexec(conn, data.c_str() + 2);//Сюда потом вставить запросы
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
 		std::cerr << "ERROR DB: " << PQerrorMessage(conn) << std::endl;
@@ -37,10 +37,11 @@ bool SQL_queries::DDL_querie(std::string& data) {
 	size_t delimiter_pos = data.find(query_params_delimiter);// Находим позицию разделителя
 
 	if (delimiter_pos == std::string::npos) {
-		std::cerr << "Ошибка: Разделитель '|' между запросом и параметрами не найден." << std::endl;
+		std::cerr << "ERROR: Not delimiter '|'" << std::endl;
+		return false;
 	}
 
-	command = data.substr(0, delimiter_pos);
+	command = data.substr(2, delimiter_pos);
 	std::string arg = data.substr(delimiter_pos + 1);
 	std::string temp;
 

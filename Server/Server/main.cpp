@@ -71,7 +71,15 @@ void handleClient(const SOCKET& clientSocket) { //–¿¡Œ“¿ — —Œ ≈“ŒÃ
 				break;
 
 			case '2':
-				queries.DDL_querie(data);
+				
+				if (queries.DDL_querie(data)) {
+					data.clear();
+					data = "true";
+					break;
+				}
+				std::cout << "Not DDL query: " << clientSocket << " sock" << std::endl;
+				data.clear();
+				data = "false";
 				break;
 
 			default:
@@ -101,25 +109,27 @@ int main() {
 		return 1;
 	}
 
+
+
 	try {
 		TCP_Socket sock;
 		sock.bind(ADDRESS_IP4, PORT);
 		sock.listen(10);
 
-		std::cout << "Server: "<< ADDRESS_IP4 <<":"<<PORT<< " OPEN!" << std::endl;//–¿«Œ¡–¿“‹—ﬂ
+		std::cout << "Server: "<< ADDRESS_IP4 <<":"<<PORT<< " OPEN!" << std::endl;
 
 		while (true) {
 
 			SOCKET clientSocket = sock.accept();
-			
 			std::cout << "Client connected: " << clientSocket << std::endl;//–¿«Œ¡–¿“‹—ﬂ
-			handleClient(clientSocket);
-			/*std::thread clientThread(handleClient, std::cref(clientSocket));
-			clientThread.detach();*/
+			std::thread clientThread(handleClient, std::cref(clientSocket));
+			clientThread.detach();
 		}
 		sock.close();
 	}
 	
+
+
 	catch (const std::runtime_error& other) {
 		std::cerr << "ERROR: " << other.what();
 	}
