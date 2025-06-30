@@ -17,6 +17,7 @@ void SQL_queries::DML_querie(std::string& data)
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
 			data += PQgetvalue(res, i, j);
+			data += ' ';
 		}
 	}
 

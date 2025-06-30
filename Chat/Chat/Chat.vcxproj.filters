@@ -21,12 +21,6 @@
     <ClCompile Include="User.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="Internet.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="SHA1.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="TCP_Socket.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
@@ -36,9 +30,6 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Internet.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="SHA1.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="TCP_Socket.h">

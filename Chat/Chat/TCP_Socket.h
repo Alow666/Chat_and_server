@@ -22,7 +22,7 @@ public:
 
     bool connect(const std::string& address);
     void send(std::string& data);
-    void recv(std::string& data);
+    std::string recv();
     void close();
   
 private:

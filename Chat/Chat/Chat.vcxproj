@@ -127,15 +127,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Internet.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="SHA1.cpp" />
     <ClCompile Include="TCP_Socket.cpp" />
     <ClCompile Include="User.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Internet.h" />
-    <ClInclude Include="SHA1.h" />
     <ClInclude Include="TCP_Socket.h" />
     <ClInclude Include="User.h" />
   </ItemGroup>

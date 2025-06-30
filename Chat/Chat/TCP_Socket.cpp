@@ -38,31 +38,41 @@ void TCP_Socket::send(std::string& data) {
         std::cout << "Not send!" << std::endl;
 }
 
-void TCP_Socket::recv(std::string& data) {
+std::string TCP_Socket::recv(){
     std::vector<char> buffer(BUFFER_SIZE);
     int bytesRead = 0;
     unsigned overSizePack = 0;//Количество всех байт 
     bool sizeDataFlag = false;
-    
-    while((bytesRead = ::recv(sock, buffer.data(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
+    std::string data;
+
+    do{
+
+        bytesRead = ::recv(sock, buffer.data(), BUFFER_SIZE, 0);
 
         if (bytesRead == SOCKET_ERROR) {//Если recv выбросил ошибку
-            std::cerr << "Error receiving data!" << std::endl;
+            std::cerr << "ERROR: server connection error > " << WSAGetLastError() << std::endl;
+            break;
         }
-        if (bytesRead == 0) {
-            std::cerr << "Error server slep!" << std::endl;
+
+        if (bytesRead == 0) {//Если пользователь отключился 
+            std::cout << "ERROR: The server is sleeping" << std::endl;
+            break;
         }
+
         if (sizeDataFlag == false && bytesRead > 10) {
             overSizePack = TCP_Socket::extractSizeFromPacketWithTextSize(buffer);
+            data.append(buffer.begin() + 10, buffer.begin() + bytesRead);
             sizeDataFlag = true;
         }
+        else {
+            data.append(buffer.begin(), buffer.begin() + bytesRead);
+        }
 
-        data.append(buffer.begin(), buffer.begin() + bytesRead);
+        if (data.length() == overSizePack) {
+            return data;
+        }
 
-        //if (data.length() == overSizePack) { //Проверка полного получения данных
-        //    break;
-        //}
-    }
+    } while (bytesRead > 0);
 }
     
 

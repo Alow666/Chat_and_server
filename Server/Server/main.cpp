@@ -40,7 +40,9 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 	
 	std::cout << "Handling client: " << clientSocket << std::endl;
 
-	while ((bytesRead = ::recv(clientSocket, buffer.data(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
+	do {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
+
+		bytesRead = ::recv(clientSocket, buffer.data(), BUFFER_SIZE, 0);
 
 		if (bytesRead == SOCKET_ERROR) {//Если recv выбросил ошибку
 			std::cerr << "Error receiving data from client (" << clientSocket << "): " << WSAGetLastError() << std::endl;
@@ -62,7 +64,7 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 		}
 
 		if (data.length() == overSizePack) { //Проверка полного получения данных
-			
+
 			SQL_queries queries(conn);//Класс для работы с запросами SQL (DDL и DML)
 
 			switch (data[0])
@@ -72,7 +74,7 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 				break;
 
 			case '2':
-				
+
 				if (queries.DDL_querie(data)) {
 					data.clear();
 					data = "true";
@@ -97,7 +99,8 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 			data.clear();
 		}
 		buffer.clear();
-	}
+
+	} while (bytesRead > 0);
 
 	PQfinish(conn);
 	closesocket(clientSocket);
