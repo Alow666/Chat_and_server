@@ -19,14 +19,16 @@ public:
     void bind(const std::string& ipAddress, int port);
     void listen(int backlog);
     SOCKET accept();
-    int send(const std::string& data);
+    int send(std::string& data);
     int recv(char* buffer, int len);
     void close();
     SOCKET getHandle() const;
     static void createPacketWithTextSize(std::string& data);
     static int extractSizeFromPacketWithTextSize(const std::vector<char>& data);
+    SOCKET& getSocket();
 
 private:
     SOCKET sock;
+    
 };
 

@@ -16,7 +16,7 @@ int main() {
 		return 1;
 	}
 
-	std::string aa("1select name from users;");
+	std::string aa("2INSERT INTO users (name, second_name, login, number_phone, email, hash_pass) VALUES ($1, $2, $3, $4, $5, $6)|Alice, Wunder, Alow_, +79039471795, merda@mail.ru, 123");
 	
 	TCP_Socket sock;
 	sock.connect(SERVER_ADDRESS);

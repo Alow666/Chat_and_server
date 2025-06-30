@@ -6,6 +6,7 @@
 #include <thread>
 #include <libpq-fe.h>
 #include "SQL_queries.h"
+#include <conio.h> 
 
 #define PORT 50500
 #define ADDRESS_IP4 "127.0.0.1"
@@ -37,9 +38,7 @@ void handleClient(const SOCKET& clientSocket) { //РАБОТА С СОКЕТОМ
 	
 	std::cout << "Handling client: " << clientSocket << std::endl;
 
-	while (true) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
-
-		bytesRead = ::recv(clientSocket, buffer.data(), BUFFER_SIZE, 0);
+	while ((bytesRead = ::recv(clientSocket, buffer.data(), BUFFER_SIZE, 0)) > 0) {//Выйдет из цикла при возврате revc 0, а так же закрытии connect или ошибке
 
 		if (bytesRead == SOCKET_ERROR) {//Если recv выбросил ошибку
 			std::cerr << "Error receiving data from client (" << clientSocket << "): " << WSAGetLastError() << std::endl;
@@ -109,7 +108,8 @@ int main() {
 		return 1;
 	}
 
-
+	int activity;
+	char exit = 27;
 
 	try {
 		TCP_Socket sock;
@@ -117,13 +117,31 @@ int main() {
 		sock.listen(10);
 
 		std::cout << "Server: "<< ADDRESS_IP4 <<":"<<PORT<< " OPEN!" << std::endl;
+		timeval timeout{ 1,0 };
 
 		while (true) {
 
+			fd_set read_fds;
+			FD_ZERO(&read_fds);             // Очищаем набор
+			FD_SET(sock.getSocket(), &read_fds); // Добавляем слушающий сокет
+
+			activity = select(NULL, &read_fds, NULL, NULL, &timeout);
+
+			if (activity < 0) {
+				int error_code = WSAGetLastError();
+				if (error_code == WSAEINTR) continue;
+			}
+
+			if (activity == 0) {
+				std::cout << "No new connections. Doing background work..." << std::endl;
+				continue;
+			}
+
 			SOCKET clientSocket = sock.accept();
 			std::cout << "Client connected: " << clientSocket << std::endl;//РАЗОБРАТЬСЯ
-			std::thread clientThread(handleClient, std::cref(clientSocket));
-			clientThread.detach();
+			handleClient(clientSocket);
+		/*	std::thread clientThread(handleClient, std::cref(clientSocket));
+			clientThread.detach();*/
 		}
 		sock.close();
 	}

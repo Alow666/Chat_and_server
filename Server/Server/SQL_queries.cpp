@@ -2,7 +2,7 @@
 
 void SQL_queries::DML_querie(std::string& data)
 {
-	PGresult* res = PQexec(conn, data.c_str() + 2);//Сюда потом вставить запросы
+	PGresult* res = PQexec(conn, data.c_str() + 1);//Сюда потом вставить запросы
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
 		std::cerr << "ERROR DB: " << PQerrorMessage(conn) << std::endl;
@@ -23,7 +23,7 @@ void SQL_queries::DML_querie(std::string& data)
 	PQclear(res);
 };
 
-bool SQL_queries::DDL_querie(std::string& data) {
+bool SQL_queries::DDL_querie(std::string& data) {//"INSERT INTO students (name, age) VALUES ($1, $2)|Alice, 20"
 
 	std::string command; //Команда
 	std::vector<std::string> arguments;//Аргументы
@@ -38,10 +38,9 @@ bool SQL_queries::DDL_querie(std::string& data) {
 
 	if (delimiter_pos == std::string::npos) {
 		std::cerr << "ERROR: Not delimiter '|'" << std::endl;
-		return false;
 	}
 
-	command = data.substr(2, delimiter_pos);
+	command = data.substr(1, delimiter_pos - 1);
 	std::string arg = data.substr(delimiter_pos + 1);
 	std::string temp;
 
@@ -62,8 +61,8 @@ bool SQL_queries::DDL_querie(std::string& data) {
 
 	param_values_c_array.reserve(arguments_count);
 
-	for (size_t i = 0; i < arguments_count; ++i) {
-		param_values_c_array[i] = arguments[i].c_str();
+	for (const auto& x : arguments) {
+		param_values_c_array.push_back(x.c_str());
 	}
 
 	PGresult* res = PQexecParams(

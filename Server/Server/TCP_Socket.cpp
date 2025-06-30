@@ -14,6 +14,10 @@ TCP_Socket::~TCP_Socket() {
     }
 }
 
+SOCKET& TCP_Socket::getSocket() {
+    return sock;
+}
+
 void TCP_Socket::bind(const std::string& ipAddress, int port) {
     sockaddr_in addr;
     addr.sin_family = AF_INET;
@@ -35,7 +39,6 @@ void TCP_Socket::listen(int backlog) {
 }
 
 SOCKET TCP_Socket::accept() {
-    
     SOCKET clientSock = ::accept(sock, nullptr, nullptr);
     if (clientSock == INVALID_SOCKET) {
         throw std::runtime_error("Failed to accept connection");
@@ -43,7 +46,8 @@ SOCKET TCP_Socket::accept() {
     return clientSock;
 }
 
-int TCP_Socket::send(const std::string& data) {
+int TCP_Socket::send(std::string& data) {
+    createPacketWithTextSize(data);
     return ::send(sock, data.c_str(), static_cast<int>(data.length()), 0);
 }
 
