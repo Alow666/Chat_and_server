@@ -12,7 +12,6 @@ public:
 	~SQL_queries() {};
 
 	void DML_querie(std::string& data);
-
 	bool DDL_querie(std::string& data);
 
 private:

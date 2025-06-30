@@ -34,7 +34,7 @@ bool SQL_queries::DDL_querie(std::string& data) {//"INSERT INTO students (name, 
 
 	char query_params_delimiter = '|';
 
-	size_t delimiter_pos = data.find(query_params_delimiter);// Находим позицию разделителя
+	size_t delimiter_pos = data.find(query_params_delimiter);//Позиция разделителя
 
 	if (delimiter_pos == std::string::npos) {
 		std::cerr << "ERROR: Not delimiter '|'" << std::endl;
@@ -44,16 +44,16 @@ bool SQL_queries::DDL_querie(std::string& data) {//"INSERT INTO students (name, 
 	std::string arg = data.substr(delimiter_pos + 1);
 	std::string temp;
 
-	arg.erase(std::remove_if(arg.begin(), arg.end(), ::isspace), arg.end());
+	arg.erase(std::remove_if(arg.begin(), arg.end(), ::isspace), arg.end());//Отчистка от пробелов
 
 	std::stringstream ss(arg);
 	query_params_delimiter = ',';
 
-	while (std::getline(ss, temp, query_params_delimiter)) {
+	while (std::getline(ss, temp, query_params_delimiter)) {//Перенос всех аргументов в вектор 
 		arguments.push_back(temp.c_str());
 	}
 
-	for (auto& x : arguments) {
+	for (auto& x : arguments) {//Заполнения отальных векторов 
 		length_arguments.push_back(static_cast<int>(x.length()));
 		param_formats_arguments.push_back(0);
 		arguments_count++;

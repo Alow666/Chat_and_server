@@ -1,11 +1,13 @@
 #include <iostream>
+
 #include "TCP_Socket.h"
+#include "SQL_queries.h"
+
 #include <stdexcept> 
 #include <string>  
 #include <vector> 
 #include <thread>
 #include <libpq-fe.h>
-#include "SQL_queries.h"
 #include <conio.h> 
 
 #define PORT 50500
@@ -109,17 +111,30 @@ int main() {
 	}
 
 	int activity;
-	char exit = 27;
+	const char exit = 27; //ESC
+	std::atomic<bool> exitflag = true;
 
 	try {
 		TCP_Socket sock;
 		sock.bind(ADDRESS_IP4, PORT);
 		sock.listen(10);
+		
+		std::cout << "Server: " << ADDRESS_IP4 << ":" << PORT << " OPEN!" << std::endl;
+		timeval timeout{ 1, 0 };
 
-		std::cout << "Server: "<< ADDRESS_IP4 <<":"<<PORT<< " OPEN!" << std::endl;
-		timeval timeout{ 1,0 };
+		std::cout << "To close the server press 'ESC'" << std::endl;
+		std::thread exitThread(
+			[&exitflag, exit]() {
+				char x;
+				do{
+					x = _getch();
+					if (exit == x) {
+						exitflag = false;
+					}
+				}while(exitflag);
+			});
 
-		while (true) {
+		while (exitflag) {
 
 			fd_set read_fds;
 			FD_ZERO(&read_fds);             // Î÷èùàåì íàáîð
@@ -138,20 +153,18 @@ int main() {
 			}
 
 			SOCKET clientSocket = sock.accept();
-			std::cout << "Client connected: " << clientSocket << std::endl;//ÐÀÇÎÁÐÀÒÜÑß
-			handleClient(clientSocket);
-		/*	std::thread clientThread(handleClient, std::cref(clientSocket));
-			clientThread.detach();*/
+			std::cout << "Client connected: " << clientSocket << std::endl;
+			std::thread clientThread(handleClient, std::cref(clientSocket));//ÏÎÒÎÌ ÑÄÅËÀÒÜ ÏÓË ÏÎÒÎÊÎÂ
+			clientThread.detach();
 		}
 		sock.close();
+		exitThread.join();
 	}
 	
-
-
 	catch (const std::runtime_error& other) {
 		std::cerr << "ERROR: " << other.what();
 	}
-
+	
 	WSACleanup();
 	return 0;
 }
